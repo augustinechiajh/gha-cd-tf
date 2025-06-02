@@ -2,7 +2,7 @@
 
 This GitHub Action runs `terraform init`, `terraform plan`, and `terraform apply` against a specified environment, using backend and variable files matched to that environment.
 
-Note: Label your backend config file for terraform init to remote backend as "backend.<env>.conf". 
+> Label your backend config file for terraform init to remote backend as "backend.<env>.conf". 
 
 ## Features
 
@@ -12,13 +12,27 @@ Note: Label your backend config file for terraform init to remote backend as "ba
 - Applies the plan automatically
 - Exports current state to `tfstate.json` and `data.json`
 
+## Prerequisites
+
+### Required GitHub Secrets
+
+Ensure the following secrets are configured in your GitHub repository or environment:
+
+| Secret Name                     | Description                                                                                       |
+|----------------------------------|---------------------------------------------------------------------------------------------------|
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | The full Workload Identity Provider resource name. Example: `projects/123456789/locations/global/workloadIdentityPools/github/providers/my-provider` |
+| `GCP_IMPERSONATOR_SA`            | Service account email to impersonate via Workload Identity Federation. Example: `github-ci@your-project.iam.gserviceaccount.com` |
+| `GCP_DEPLOYMENT_SA`              | Service account used by Terraform for infrastructure deployment. Example: `terraform-deployer@your-project.iam.gserviceaccount.com` |
+
+> Ensure the impersonator service account has the `roles/iam.serviceAccountTokenCreator` role on the deployment service account.
+
 ## How to run this in your GitHub Actions pipeline
 
 Add the following to your workflow to run CI checks on your Terraform configuration:
 
 ```yaml
 - name: Run Terraform CD
-  uses: augustinechiajh/gha-cd-tf/.github/workflows/terraform-deployment.yaml@main
+  uses: augustinechiajh/gha-cd-tf/.github/workflows/terraform-deployment-gcp.yaml@main
   with:
     environment: 'dev'
     terraform-work-dir: 'iac/tf' # specify your own directory, iac/tf is default

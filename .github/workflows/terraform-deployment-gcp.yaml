@@ -15,6 +15,14 @@ on:
         required: true
         type: string
         default: 'iac/tf'
+    
+    secrets:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
+        required: true
+      GCP_IMPERSONATOR_SA:
+        required: true
+      GCP_DEPLOYMENT_SA:
+        required: true
   
 jobs:
   deploy:
@@ -23,22 +31,29 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
-      - name: Change to working directory
-        shell: bash
+      
+      - name: Authenticate to GCP
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_IMPERSONATOR_SA }}
+    
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Assume deployment service account
         run: |
-          cd "${{ inputs.terraform-work-dir }}"
-          echo "Working directory: $(pwd)"
+          gcloud config set auth/impersonate_service_account ${{ secrets.GCP_DEPLOYMENT_SA }}
 
       - name: Terraform init
-        shell: bash
+        working-directory: ${{ inputs.terraform-work-dir }}
         run: |
           cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform init -backend-config=backend.${{ inputs.environment }}.conf"
           terraform init -backend-config="backend.${{ inputs.environment }}.conf"
       
       - name: Terraform plan
-        shell: bash
+        working-directory: ${{ inputs.terraform-work-dir }}
         run: |
           cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform fmt -check -recursive"
@@ -48,7 +63,7 @@ jobs:
           terraform show -json tfplan > tfplan.json
       
       - name: Terraform Apply
-        shell: bash
+        working-directory: ${{ inputs.terraform-work-dir }}
         run: |
           cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform apply -input=false -auto-approve tfplan"
