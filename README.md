@@ -18,7 +18,7 @@ Add the following to your workflow to run CI checks on your Terraform configurat
 
 ```yaml
 - name: Run Terraform CD
-  uses: augustinechiajh/gha-cd-tf@main
+  uses: augustinechiajh/gha-cd-tf/.github/workflows/terraform-deployment.yaml@main
   with:
     environment: 'dev'
     terraform-work-dir: 'iac/tf' # specify your own directory, iac/tf is default
