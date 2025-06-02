@@ -1,0 +1,60 @@
+name: "Terraform Deployment"
+
+description: "Performs Terraform init, plan, and apply for a given environment using appropriate var and backend config files."
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Deployment environment name (e.g., dev, staging, prod)"
+        required: true
+        type: string
+        default: "dev"
+      terraform-work-dir:
+        description: "Terraform working directory"
+        required: true
+        type: string
+        default: 'iac/tf'
+  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Change to working directory
+        shell: bash
+        run: |
+          cd "${{ inputs.terraform-work-dir }}"
+          echo "Working directory: $(pwd)"
+
+      - name: Terraform init
+        shell: bash
+        run: |
+          cd ${{ inputs.terraform-work-dir }}
+          echo "Running terraform init -backend-config=backend.${{ inputs.environment }}.conf"
+          terraform init -backend-config="backend.${{ inputs.environment }}.conf"
+      
+      - name: Terraform plan
+        shell: bash
+        run: |
+          cd ${{ inputs.terraform-work-dir }}
+          echo "Running terraform fmt -check -recursive"
+          terraform fmt -check -recursive
+          echo "Running terraform plan -var-file=terraform.${{ inputs.environment }}.tfvars -out=tfplan"
+          terraform plan -var-file="terraform.${{ inputs.environment }}.tfvars" -out="tfplan"
+          terraform show -json tfplan > tfplan.json
+      
+      - name: Terraform Apply
+        shell: bash
+        run: |
+          cd ${{ inputs.terraform-work-dir }}
+          echo "Running terraform apply -input=false -auto-approve tfplan"
+          terraform apply -input=false -auto-approve "tfplan"
+
+          echo "Exporting terraform state to JSON"
+          terraform state pull > tfstate.json
+          terraform show -json tfstate.json > state.json
+
