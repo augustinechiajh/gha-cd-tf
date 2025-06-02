@@ -48,14 +48,12 @@ jobs:
       - name: Terraform init
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
-          cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform init -backend-config=backend.${{ inputs.environment }}.conf"
           terraform init -backend-config="backend.${{ inputs.environment }}.conf"
       
       - name: Terraform plan
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
-          cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform fmt -check -recursive"
           terraform fmt -check -recursive
           echo "Running terraform plan -var-file=terraform.${{ inputs.environment }}.tfvars -out=tfplan"
@@ -65,7 +63,6 @@ jobs:
       - name: Terraform Apply
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
-          cd ${{ inputs.terraform-work-dir }}
           echo "Running terraform apply -input=false -auto-approve tfplan"
           terraform apply -input=false -auto-approve "tfplan"
 
