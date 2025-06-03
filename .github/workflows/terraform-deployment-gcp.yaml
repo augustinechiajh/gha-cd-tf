@@ -52,7 +52,7 @@ jobs:
             exit 1
           fi
           if [ ! -d "${{ inputs.terraform-work-dir }}" ]; then
-            echo "❌ Directory ${{ inputs.terraform-work-dir }} does not exist!"
+            echo "Directory ${{ inputs.terraform-work-dir }} does not exist."
             exit 1
           fi
 
