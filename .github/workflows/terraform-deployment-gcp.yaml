@@ -45,6 +45,17 @@ jobs:
         run: |
           gcloud config set auth/impersonate_service_account ${{ secrets.GCP_DEPLOYMENT_SA }}
 
+      - name: Check Terraform directory exists
+        run: |
+          if [ -z "${{ inputs.terraform-work-dir }}" ]; then
+            echo "Error: 'terraform-work-dir' input is required but not set." | tee -a ${LOGFILE}
+            exit 1
+          fi
+          if [ ! -d "${{ inputs.terraform-work-dir }}" ]; then
+            echo "❌ Directory ${{ inputs.terraform-work-dir }} does not exist!"
+            exit 1
+          fi
+
       - name: Terraform init
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
