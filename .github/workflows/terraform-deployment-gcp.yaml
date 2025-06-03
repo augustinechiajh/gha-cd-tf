@@ -62,10 +62,8 @@ jobs:
       - name: Terraform init
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
-          export TF_LOG=DEBUG
-          export TF_LOG_PATH=terraform-init.log
           echo "Running terraform init -backend-config=backend.${{ inputs.environment }}.conf"
-          terraform init -backend-config="backend.${{ inputs.environment }}.conf"
+          TF_LOG=DEBUG terraform init -backend-config="backend.${{ inputs.environment }}.conf"
       
       - name: Terraform plan
         working-directory: ${{ inputs.terraform-work-dir }}
