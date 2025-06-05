@@ -79,12 +79,23 @@ jobs:
         run: |
           echo "Running terraform fmt -check -recursive"
           terraform fmt -check -recursive
+
           echo "Running terraform plan -var-file=terraform.${{ inputs.environment }}.tfvars -out=tfplan"
           terraform plan ${IS_DESTROY} -var-file="terraform.${{ inputs.environment }}.tfvars" -out="tfplan"
           terraform show -json tfplan > tfplan.json
+
+          if [ "$TF_LOG" = "DEBUG" ]; then
+            echo "=== TF LOG OUTPUT ==="
+            cat terraform-debug.log || echo "No log file found."
+          fi
       
       - name: Terraform Apply
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
           echo "Running terraform apply -input=false -auto-approve tfplan"
           terraform apply -input=false -auto-approve "tfplan"
+
+          if [ "$TF_LOG" = "DEBUG" ]; then
+            echo "=== TF LOG OUTPUT ==="
+            cat terraform-debug.log || echo "No log file found."
+          fi
