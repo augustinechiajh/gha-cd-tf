@@ -15,6 +15,16 @@ on:
         required: true
         type: string
         default: 'iac/tf'
+      is-destroy:
+        description: "If true, destroy terraform infra"
+        type: boolean
+        required: false
+        default: false
+      debug-logs:
+        description: "If true, enable TF_LOG=DEBUG"
+        type: boolean
+        required: false
+        default: false
     
     secrets:
       GCP_WORKLOAD_IDENTITY_PROVIDER:
@@ -37,13 +47,6 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_IMPERSONATOR_SA }}
-    
-      # - name: Set up gcloud
-      #   uses: google-github-actions/setup-gcloud@v2
-      
-      # - name: Assume deployment service account
-      #   run: |
-      #     gcloud config set auth/impersonate_service_account ${{ secrets.GCP_DEPLOYMENT_SA }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
@@ -58,17 +61,18 @@ jobs:
             echo "Directory ${{ inputs.terraform-work-dir }} does not exist."
             exit 1
           fi
-
+      - name: Set environment flags
+        id: set-env
+        run: |
+          echo "IS_DESTROY=$([ '${{ inputs.is-destroy }}' == 'true' ] && echo '-destroy' || echo '')" >> $GITHUB_ENV
+          echo "TF_LOG=$([ '${{ inputs.debug-logs }}' == 'true' ] && echo 'DEBUG' || echo '')" >> $GITHUB_ENV
+          echo "TF_LOG_PATH=$([ '${{ inputs.debug-logs }}' == 'true' ] && echo 'terraform-debug.log' || echo '')" >> $GITHUB_ENV
+        
       - name: Terraform init
         working-directory: ${{ inputs.terraform-work-dir }}
         run: |
-          export TF_LOG=DEBUG
-          export TF_LOG_PATH=terraform-init.log
           echo "Running terraform init -backend-config=backend.${{ inputs.environment }}.conf"
           terraform init -backend-config="backend.${{ inputs.environment }}.conf"
-          echo "=== BEGIN TERRAFORM DEBUG LOG ==="
-          cat terraform-init.log
-          echo "=== END TERRAFORM DEBUG LOG ==="
       
       - name: Terraform plan
         working-directory: ${{ inputs.terraform-work-dir }}
@@ -76,7 +80,7 @@ jobs:
           echo "Running terraform fmt -check -recursive"
           terraform fmt -check -recursive
           echo "Running terraform plan -var-file=terraform.${{ inputs.environment }}.tfvars -out=tfplan"
-          terraform plan -var-file="terraform.${{ inputs.environment }}.tfvars" -out="tfplan"
+          terraform plan ${IS_DESTROY} -var-file="terraform.${{ inputs.environment }}.tfvars" -out="tfplan"
           terraform show -json tfplan > tfplan.json
       
       - name: Terraform Apply
@@ -84,8 +88,3 @@ jobs:
         run: |
           echo "Running terraform apply -input=false -auto-approve tfplan"
           terraform apply -input=false -auto-approve "tfplan"
-
-          echo "Exporting terraform state to JSON"
-          terraform state pull > tfstate.json
-          terraform show -json tfstate.json > state.json
-
